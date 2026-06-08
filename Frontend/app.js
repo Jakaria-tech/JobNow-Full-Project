@@ -65,7 +65,9 @@ if (loginForm) {
 if (window.location.pathname.includes('dashboard.html')) {
     let currentUser = JSON.parse(localStorage.getItem('jobnow_currentUser'));
 
-    if (!currentUser) { window.location.href = 'login.html'; }
+    if (!currentUser) { 
+        window.location.href = 'login.html'; 
+    }
 
     const syncUser = () => {
         const users = JSON.parse(localStorage.getItem('jobnow_users'));
@@ -115,75 +117,63 @@ if (window.location.pathname.includes('dashboard.html')) {
     }
 
     // Render Jobs List
-const renderJobs = () => {
-    const jobs = JSON.parse(localStorage.getItem('jobnow_jobs'));
-    const jobListDiv = document.getElementById('jobList');
+    const renderJobs = () => {
+        const jobs = JSON.parse(localStorage.getItem('jobnow_jobs'));
+        const jobListDiv = document.getElementById('jobList');
+        if (!jobListDiv) return;
 
-    const filterElement = document.getElementById('jobFilter');
-    const selectedFilter = filterElement ? filterElement.value : 'All';
+        const filterElement = document.getElementById('jobFilter');
+        const selectedFilter = filterElement ? filterElement.value : 'All';
 
-    jobListDiv.innerHTML = '';
+        jobListDiv.innerHTML = '';
+        let filteredJobs = jobs;
 
-    let filteredJobs = jobs;
-
-    if (selectedFilter !== 'All') {
-        filteredJobs = jobs.filter(job => job.type === selectedFilter);
-    }
-
-    if (filteredJobs.length === 0) {
-        jobListDiv.innerHTML = `
-            <div class="job-card">
-                <h4>No Jobs Found</h4>
-                <p>No jobs available in this category.</p>
-            </div>
-        `;
-        return;
-    }
-
-    filteredJobs.forEach(job => {
-        const badgeClass = job.type === 'Part-time' ? 'part-time' : 'daily';
-        let actionButton = '';
-
-        if (currentUser.role === 'jobseeker') {
-            const hasApplied = currentUser.appliedJobs &&
-                currentUser.appliedJobs.includes(job.id);
-
-            actionButton = hasApplied
-                ? `<button style="background-color:#64748b; cursor:not-allowed;" disabled>Applied</button>`
-                : `<button onclick="applyJob(${job.id}, '${job.title}', '${job.recruiterEmail}')">Apply Now</button>`;
-        } else {
-            if (job.recruiterEmail === currentUser.email) {
-    actionButton = `
-        <button onclick="editJob(${job.id})"
-            style="background:#f59e0b; width:auto; margin-right:5px;">
-            Edit
-        </button>
-
-        <button onclick="deleteJob(${job.id})"
-            style="background:#ef4444; width:auto;">
-            Delete
-        </button>
-    `;
-} else {
-    actionButton = `
-        <span style="color:#64748b; font-size:14px; font-style:italic; font-weight:600;">
-            Active Post
-        </span>
-    `;
-}
+        if (selectedFilter !== 'All') {
+            filteredJobs = jobs.filter(job => job.type === selectedFilter);
         }
 
-        jobListDiv.innerHTML += `
-            <div class="job-card">
-                <span class="badge ${badgeClass}">${job.type}</span>
-                <h4>${job.title}</h4>
-                <p style="color:#475569; font-size:15px; margin:8px 0;">${job.desc}</p>
-                <p class="salary">Salary: ${job.salary}</p>
-                ${actionButton}
-            </div>
-        `;
-    });
-};
+        if (filteredJobs.length === 0) {
+            jobListDiv.innerHTML = `
+                <div class="job-card">
+                    <h4>No Jobs Found</h4>
+                    <p>No jobs available in this category.</p>
+                </div>
+            `;
+            return;
+        }
+
+        filteredJobs.forEach(job => {
+            const badgeClass = job.type === 'Part-time' ? 'part-time' : 'daily';
+            let actionButton = '';
+
+            if (currentUser.role === 'jobseeker') {
+                const hasApplied = currentUser.appliedJobs && currentUser.appliedJobs.includes(job.id);
+                actionButton = hasApplied
+                    ? `<button style="background-color:#64748b; cursor:not-allowed;" disabled>Applied</button>`
+                    : `<button onclick="applyJob(${job.id}, '${job.title}', '${job.recruiterEmail}')">Apply Now</button>`;
+            } else {
+                if (job.recruiterEmail === currentUser.email) {
+                    actionButton = `
+                        <button onclick="editJob(${job.id})" style="background:#f59e0b; width:auto; margin-right:5px;">Edit</button>
+                        <button onclick="deleteJob(${job.id})" style="background:#ef4444; width:auto;">Delete</button>
+                    `;
+                } else {
+                    actionButton = `<span style="color:#64748b; font-size:14px; font-style:italic; font-weight:600;">Active Post</span>`;
+                }
+            }
+
+            jobListDiv.innerHTML += `
+                <div class="job-card">
+                    <span class="badge ${badgeClass}">${job.type}</span>
+                    <h4>${job.title}</h4>
+                    <p style="color:#475569; font-size:15px; margin:8px 0;">${job.desc}</p>
+                    <p class="salary">Salary: ${job.salary}</p>
+                    ${actionButton}
+                </div>
+            `;
+        });
+    };
+
     // Render Recruiter Alerts
     const renderRecruiterAlerts = () => {
         if(currentUser.role !== 'recruiter') return;
@@ -192,6 +182,7 @@ const renderJobs = () => {
         
         document.getElementById('notiCount').innerText = myJobApps.length;
         const alertsList = document.getElementById('applicantAlertsList');
+        if (!alertsList) return;
         alertsList.innerHTML = '';
 
         if(myJobApps.length === 0) {
@@ -201,75 +192,25 @@ const renderJobs = () => {
 
         myJobApps.forEach(app => {
             alertsList.innerHTML += `
-<div class="applicant-card">
-
-    <p style="font-size:14px; color:#1e293b;">
-        🔔 <strong>${app.applicantName}</strong>
-        applied for
-        <strong>"${app.jobTitle}"</strong>
-    </p>
-
-    <div style="
-        background:white;
-        border:1px solid #e2e8f0;
-        padding:10px;
-        border-radius:6px;
-        margin:10px 0;
-        font-size:13px;
-    ">
-
-        <p><strong>Name:</strong> ${app.applicantName}</p>
-
-        <p><strong>Email:</strong> ${app.applicantEmail}</p>
-
-        <p><strong>Phone:</strong>
-        ${app.applicantCv.phone || 'Not Provided'}</p>
-
-        <p><strong>Education:</strong>
-        ${app.applicantCv.education || 'Not Provided'}</p>
-
-        <p><strong>Skills:</strong>
-        ${app.applicantCv.skills || 'Not Provided'}</p>
-
-        <p><strong>Experience:</strong>
-        ${app.applicantCv.experience || 'Not Provided'}</p>
-
-        <p><strong>Applied On:</strong>
-        ${app.appliedAt || 'N/A'}</p>
-
-        <p><strong>Status:</strong>
-        ${app.status || 'Pending'}</p>
-
-    </div>
-
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-
-        <a href="tel:${app.applicantCv.phone}">
-            <button style="
-                width:auto;
-                padding:5px 15px;
-                font-size:12px;
-                background-color:#10b981;
-            ">
-                📞 Call Candidate
-            </button>
-        </a>
-
-        <a href="mailto:${app.applicantEmail}">
-            <button style="
-                width:auto;
-                padding:5px 15px;
-                font-size:12px;
-                background-color:#3b82f6;
-            ">
-                📧 Email Candidate
-            </button>
-        </a>
-
-    </div>
-
-</div>
-`;
+                <div class="applicant-card">
+                    <p style="font-size:14px; color:#1e293b;">
+                        🔔 <strong>${app.applicantName}</strong> applied for <strong>"${app.jobTitle}"</strong>
+                    </p>
+                    <div style="background:white; border:1px solid #e2e8f0; padding:10px; border-radius:6px; margin:10px 0; font-size:13px;">
+                        <p><strong>Name:</strong> ${app.applicantName}</p>
+                        <p><strong>Email:</strong> ${app.applicantEmail}</p>
+                        <p><strong>Phone:</strong> ${app.applicantCv.phone || 'Not Provided'}</p>
+                        <p><strong>Education:</strong> ${app.applicantCv.education || 'Not Provided'}</p>
+                        <p><strong>Skills:</strong> ${app.applicantCv.skills || 'Not Provided'}</p>
+                        <p><strong>Experience:</strong> ${app.applicantCv.experience || 'Not Provided'}</p>
+                        <p><strong>Applied On:</strong> ${app.appliedAt || 'N/A'}</p>
+                    </div>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <a href="tel:${app.applicantCv.phone}"><button style="width:auto; padding:5px 15px; font-size:12px; background-color:#10b981;">📞 Call</button></a>
+                        <a href="mailto:${app.applicantEmail}"><button style="width:auto; padding:5px 15px; font-size:12px; background-color:#3b82f6;">📧 Email</button></a>
+                    </div>
+                </div>
+            `;
         });
     };
 
@@ -279,58 +220,30 @@ const renderJobs = () => {
         jobPostForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const jobs = JSON.parse(localStorage.getItem('jobnow_jobs'));
-            if (editingJobId !== null) {
-
-    const jobIndex = jobs.findIndex(
-        job => job.id === editingJobId
-    );
-
-    if (jobIndex !== -1) {
-
-        jobs[jobIndex].title =
-            document.getElementById('jobTitle').value;
-
-        jobs[jobIndex].desc =
-            document.getElementById('jobDesc').value;
-
-        jobs[jobIndex].type =
-            document.getElementById('jobType').value;
-
-        jobs[jobIndex].salary =
-            document.getElementById('jobSalary').value;
-    }
-
-    editingJobId = null;
-
-    alert('Job updated successfully!');
-
-} else {
-
-    jobs.unshift({
-        id: Date.now(),
-        title: document.getElementById('jobTitle').value,
-        desc: document.getElementById('jobDesc').value,
-        type: document.getElementById('jobType').value,
-        salary: document.getElementById('jobSalary').value,
-        recruiterEmail: currentUser.email
-    });
-
-    alert('Your instant job has been listed live!');
-}
-
-localStorage.setItem('jobnow_jobs', JSON.stringify(jobs));
-
-jobPostForm.reset();
-
-document.getElementById('postedCount').innerText =
-    jobs.filter(
-        j => j.recruiterEmail === currentUser.email
-    ).length;
-
-renderJobs();
-            localStorage.setItem('jobnow_jobs', JSON.stringify(jobs));
             
-            alert('Your instant job has been listed live!');
+            if (editingJobId !== null) {
+                const jobIndex = jobs.findIndex(job => job.id === editingJobId);
+                if (jobIndex !== -1) {
+                    jobs[jobIndex].title = document.getElementById('jobTitle').value;
+                    jobs[jobIndex].desc = document.getElementById('jobDesc').value;
+                    jobs[jobIndex].type = document.getElementById('jobType').value;
+                    jobs[jobIndex].salary = document.getElementById('jobSalary').value;
+                }
+                editingJobId = null;
+                alert('Job updated successfully!');
+            } else {
+                jobs.unshift({
+                    id: Date.now(),
+                    title: document.getElementById('jobTitle').value,
+                    desc: document.getElementById('jobDesc').value,
+                    type: document.getElementById('jobType').value,
+                    salary: document.getElementById('jobSalary').value,
+                    recruiterEmail: currentUser.email
+                });
+                alert('Your instant job has been listed live!');
+            }
+
+            localStorage.setItem('jobnow_jobs', JSON.stringify(jobs));
             jobPostForm.reset();
             document.getElementById('postedCount').innerText = jobs.filter(j => j.recruiterEmail === currentUser.email).length;
             renderJobs();
@@ -371,43 +284,37 @@ renderJobs();
 
         if (userIdx !== -1) {
             if (!users[userIdx].appliedJobs) users[userIdx].appliedJobs = [];
-            if (
-    users[userIdx].appliedJobs &&
-    users[userIdx].appliedJobs.includes(jobId)
-) {
-    alert('You already applied for this job!');
-    return;
-}
+            if (users[userIdx].appliedJobs.includes(jobId)) {
+                alert('You already applied for this job!');
+                return;
+            }
 
-users[userIdx].appliedJobs.push(jobId)
+            users[userIdx].appliedJobs.push(jobId);
             localStorage.setItem('jobnow_users', JSON.stringify(users));
 
             const apps = JSON.parse(localStorage.getItem('jobnow_applications')) || [];
-           apps.push({
-    id: Date.now(),
-    jobId,
-    jobTitle,
-    recruiterEmail,
-
-    applicantEmail: currentUser.email,
-    applicantName: currentUser.name,
-
-    applicantCv: {
-        phone: currentUser.cv.phone,
-        skills: currentUser.cv.skills,
-        education: currentUser.cv.education,
-        experience: currentUser.cv.experience
-    },
-
-    appliedAt: new Date().toLocaleString(),
-    status: "Pending"
-});
+            apps.push({
+                id: Date.now(),
+                jobId,
+                jobTitle,
+                recruiterEmail,
+                applicantEmail: currentUser.email,
+                applicantName: currentUser.name,
+                applicantCv: {
+                    phone: currentUser.cv.phone,
+                    skills: currentUser.cv.skills,
+                    education: currentUser.cv.education,
+                    experience: currentUser.cv.experience
+                },
+                appliedAt: new Date().toLocaleString(),
+                status: "Pending"
+            });
             localStorage.setItem('jobnow_applications', JSON.stringify(apps));
 
             alert(`Successfully applied for "${jobTitle}". Recruiter notified!`);
             location.reload();
         }
-    }
+    };
 
     // Course Enrollment Code
     window.enrollCourse = (courseName) => {
@@ -429,28 +336,36 @@ users[userIdx].appliedJobs.push(jobId)
             }
         }
     };
-    
 
     // Logout Code
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-        localStorage.removeItem('jobnow_currentUser');
-        window.location.href = 'login.html';
-    });const jobFilter = document.getElementById('jobFilter');
-if (jobFilter) {
-    jobFilter.addEventListener('change', renderJobs);
-}
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('jobnow_currentUser');
+            window.location.href = 'login.html';
+        });
+    }
+
+    // Filter Buttons Fix
+    const jobFilter = document.getElementById('jobFilter');
+    if (jobFilter) {
+        jobFilter.addEventListener('change', renderJobs);
+    }
+
+    window.filterJobs = () => {
+        renderJobs();
+    };
+
+    window.resetJobFilter = () => {
+        const filterElement = document.getElementById('jobFilter');
+        if (filterElement) {
+            filterElement.value = 'All';
+            renderJobs();
+        }
+    };
+
+    // Initial Core Execution
     renderJobs();
     renderRecruiterAlerts();
-    // --- Filter Buttons Fix ---
-window.filterJobs = () => {
-    renderJobs();
-};
-
-window.resetJobFilter = () => {
-    const filterElement = document.getElementById('jobFilter');
-    if (filterElement) {
-        filterElement.value = 'All';
-        renderJobs();
-    }
-};
 }
