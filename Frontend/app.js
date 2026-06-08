@@ -441,4 +441,16 @@ if (jobFilter) {
 }
     renderJobs();
     renderRecruiterAlerts();
+    // --- Filter Buttons Fix ---
+window.filterJobs = () => {
+    renderJobs();
+};
+
+window.resetJobFilter = () => {
+    const filterElement = document.getElementById('jobFilter');
+    if (filterElement) {
+        filterElement.value = 'All';
+        renderJobs();
+    }
+};
 }
