@@ -78,7 +78,9 @@ if (window.location.pathname.includes('dashboard.html')) {
         }
     };
     syncUser();
-    let editingJobId = null;
+    
+    // Global Variable to keep track of edit mode
+    window.editingJobId = null;
 
     // UI Dashboard Base Setup
     document.getElementById('welcomeUser').innerText = `👋 ${currentUser.name}`;
@@ -116,8 +118,8 @@ if (window.location.pathname.includes('dashboard.html')) {
         }
     }
 
-    // Render Jobs List
-    const renderJobs = () => {
+    // --- Render Jobs List ---
+    window.renderJobs = () => {
         const jobs = JSON.parse(localStorage.getItem('jobnow_jobs'));
         const jobListDiv = document.getElementById('jobList');
         if (!jobListDiv) return;
@@ -154,8 +156,8 @@ if (window.location.pathname.includes('dashboard.html')) {
             } else {
                 if (job.recruiterEmail === currentUser.email) {
                     actionButton = `
-                        <button onclick="editJob(${job.id})" style="background:#f59e0b; width:auto; margin-right:5px;">Edit</button>
-                        <button onclick="deleteJob(${job.id})" style="background:#ef4444; width:auto;">Delete</button>
+                        <button onclick="editJob(${job.id})" style="background:#f59e0b; width:auto; margin-right:5px; border:none; color:white; border-radius:4px; padding:6px 12px; cursor:pointer;">Edit</button>
+                        <button onclick="deleteJob(${job.id})" style="background:#ef4444; width:auto; border:none; color:white; border-radius:4px; padding:6px 12px; cursor:pointer;">Delete</button>
                     `;
                 } else {
                     actionButton = `<span style="color:#64748b; font-size:14px; font-style:italic; font-weight:600;">Active Post</span>`;
@@ -174,8 +176,45 @@ if (window.location.pathname.includes('dashboard.html')) {
         });
     };
 
-    // Render Recruiter Alerts
-    const renderRecruiterAlerts = () => {
+    // --- Edit Job Functionality ---
+    window.editJob = (jobId) => {
+        const jobs = JSON.parse(localStorage.getItem('jobnow_jobs'));
+        const jobToEdit = jobs.find(job => job.id === jobId);
+        
+        if (jobToEdit) {
+            window.editingJobId = jobId;
+            document.getElementById('jobTitle').value = jobToEdit.title;
+            document.getElementById('jobDesc').value = jobToEdit.desc;
+            document.getElementById('jobType').value = jobToEdit.type;
+            document.getElementById('jobSalary').value = jobToEdit.salary;
+            
+            // Scroll smoothly to form
+            document.getElementById('jobPostForm').scrollIntoView({ behavior: 'smooth' });
+            alert("Job data loaded to form. Edit and press Submit to update.");
+        }
+    };
+
+    // --- Delete Job Functionality ---
+    window.deleteJob = (jobId) => {
+        if (confirm("Are you sure you want to delete this job post?")) {
+            let jobs = JSON.parse(localStorage.getItem('jobnow_jobs'));
+            jobs = jobs.filter(job => job.id !== jobId);
+            localStorage.setItem('jobnow_jobs', JSON.stringify(jobs));
+            
+            // Clear connected applications too
+            let apps = JSON.parse(localStorage.getItem('jobnow_applications')) || [];
+            apps = apps.filter(app => app.jobId !== jobId);
+            localStorage.setItem('jobnow_applications', JSON.stringify(apps));
+
+            alert("Job post deleted successfully.");
+            document.getElementById('postedCount').innerText = jobs.filter(j => j.recruiterEmail === currentUser.email).length;
+            window.renderJobs();
+            window.renderRecruiterAlerts();
+        }
+    };
+
+    // --- Render Recruiter Alerts & Applicant Details ---
+    window.renderRecruiterAlerts = () => {
         if(currentUser.role !== 'recruiter') return;
         const apps = JSON.parse(localStorage.getItem('jobnow_applications')) || [];
         const myJobApps = apps.filter(a => a.recruiterEmail === currentUser.email);
@@ -192,44 +231,44 @@ if (window.location.pathname.includes('dashboard.html')) {
 
         myJobApps.forEach(app => {
             alertsList.innerHTML += `
-                <div class="applicant-card">
-                    <p style="font-size:14px; color:#1e293b;">
+                <div class="applicant-card" style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                    <p style="font-size:14px; color:#1e293b; margin-bottom:8px;">
                         🔔 <strong>${app.applicantName}</strong> applied for <strong>"${app.jobTitle}"</strong>
                     </p>
-                    <div style="background:white; border:1px solid #e2e8f0; padding:10px; border-radius:6px; margin:10px 0; font-size:13px;">
-                        <p><strong>Name:</strong> ${app.applicantName}</p>
-                        <p><strong>Email:</strong> ${app.applicantEmail}</p>
-                        <p><strong>Phone:</strong> ${app.applicantCv.phone || 'Not Provided'}</p>
-                        <p><strong>Education:</strong> ${app.applicantCv.education || 'Not Provided'}</p>
-                        <p><strong>Skills:</strong> ${app.applicantCv.skills || 'Not Provided'}</p>
-                        <p><strong>Experience:</strong> ${app.applicantCv.experience || 'Not Provided'}</p>
-                        <p><strong>Applied On:</strong> ${app.appliedAt || 'N/A'}</p>
+                    <div style="background:white; border:1px solid #e2e8f0; padding:12px; border-radius:6px; margin:10px 0; font-size:13px; color:#334155;">
+                        <p style="margin-bottom:4px;"><strong>Name:</strong> ${app.applicantName}</p>
+                        <p style="margin-bottom:4px;"><strong>Email:</strong> ${app.applicantEmail}</p>
+                        <p style="margin-bottom:4px;"><strong>Phone:</strong> ${app.applicantCv?.phone || 'Not Provided'}</p>
+                        <p style="margin-bottom:4px;"><strong>Education:</strong> ${app.applicantCv?.education || 'Not Provided'}</p>
+                        <p style="margin-bottom:4px;"><strong>Skills:</strong> ${app.applicantCv?.skills || 'Not Provided'}</p>
+                        <p style="margin-bottom:4px;"><strong>Experience:</strong> ${app.applicantCv?.experience || 'Not Provided'}</p>
+                        <p style="margin-top:6px; color:#64748b; font-size:11px;"><strong>Applied On:</strong> ${app.appliedAt || 'N/A'}</p>
                     </div>
                     <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                        <a href="tel:${app.applicantCv.phone}"><button style="width:auto; padding:5px 15px; font-size:12px; background-color:#10b981;">📞 Call</button></a>
-                        <a href="mailto:${app.applicantEmail}"><button style="width:auto; padding:5px 15px; font-size:12px; background-color:#3b82f6;">📧 Email</button></a>
+                        <a href="tel:${app.applicantCv?.phone || ''}"><button style="width:auto; padding:6px 15px; font-size:12px; background-color:#10b981; color:white; border:none; border-radius:4px; cursor:pointer;">📞 Call</button></a>
+                        <a href="mailto:${app.applicantEmail}"><button style="width:auto; padding:6px 15px; font-size:12px; background-color:#3b82f6; color:white; border:none; border-radius:4px; cursor:pointer;">📧 Email</button></a>
                     </div>
                 </div>
             `;
         });
     };
 
-    // Recruiter Post Job Code
+    // Recruiter Post/Update Job Code
     const jobPostForm = document.getElementById('jobPostForm');
     if (jobPostForm) {
         jobPostForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const jobs = JSON.parse(localStorage.getItem('jobnow_jobs'));
             
-            if (editingJobId !== null) {
-                const jobIndex = jobs.findIndex(job => job.id === editingJobId);
+            if (window.editingJobId !== null) {
+                const jobIndex = jobs.findIndex(job => job.id === window.editingJobId);
                 if (jobIndex !== -1) {
                     jobs[jobIndex].title = document.getElementById('jobTitle').value;
                     jobs[jobIndex].desc = document.getElementById('jobDesc').value;
                     jobs[jobIndex].type = document.getElementById('jobType').value;
                     jobs[jobIndex].salary = document.getElementById('jobSalary').value;
                 }
-                editingJobId = null;
+                window.editingJobId = null;
                 alert('Job updated successfully!');
             } else {
                 jobs.unshift({
@@ -246,7 +285,7 @@ if (window.location.pathname.includes('dashboard.html')) {
             localStorage.setItem('jobnow_jobs', JSON.stringify(jobs));
             jobPostForm.reset();
             document.getElementById('postedCount').innerText = jobs.filter(j => j.recruiterEmail === currentUser.email).length;
-            renderJobs();
+            window.renderJobs();
         });
     }
 
@@ -272,7 +311,7 @@ if (window.location.pathname.includes('dashboard.html')) {
         });
     }
 
-    // Apply For Jobs
+    // --- Apply For Jobs Functionality ---
     window.applyJob = (jobId, jobTitle, recruiterEmail) => {
         if(!currentUser.cv || !currentUser.cv.phone) {
             alert('Please fill out and save your CV Form below before applying!');
@@ -350,22 +389,22 @@ if (window.location.pathname.includes('dashboard.html')) {
     // Filter Buttons Fix
     const jobFilter = document.getElementById('jobFilter');
     if (jobFilter) {
-        jobFilter.addEventListener('change', renderJobs);
+        jobFilter.addEventListener('change', window.renderJobs);
     }
 
     window.filterJobs = () => {
-        renderJobs();
+        window.renderJobs();
     };
 
     window.resetJobFilter = () => {
         const filterElement = document.getElementById('jobFilter');
         if (filterElement) {
             filterElement.value = 'All';
-            renderJobs();
+            window.renderJobs();
         }
     };
 
     // Initial Core Execution
-    renderJobs();
-    renderRecruiterAlerts();
+    window.renderJobs();
+    window.renderRecruiterAlerts();
 }
